@@ -112,14 +112,14 @@ export async function POST(
       line_items: [
         {
           title: book.title,
-          cover: book.cover_pdf_url,
-          interior: book.interior_pdf_url,
+          cover_url: book.cover_pdf_url,
+          interior_url: book.interior_pdf_url,
           pod_package_id: book.pod_package_id,
           quantity: order.quantity
         }
       ],
       shipping_address: order.shipping_address,
-      shipping_level: 'MAIL' // Standard mail fulfillment
+      shipping_option_level: 'MAIL' // Standard mail fulfillment
     };
 
     const dispatchRes = await fetch(apiUrl, {
