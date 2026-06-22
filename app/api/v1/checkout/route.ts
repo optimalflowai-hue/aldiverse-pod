@@ -3,27 +3,35 @@ import { supabaseServer } from '@/lib/supabase';
 import { decrypt } from '@/lib/crypto';
 import Stripe from 'stripe';
 
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+};
+
+export async function OPTIONS() {
+  return new Response(null, { status: 204, headers: CORS_HEADERS });
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { tenantSlug, bookId, quantity = 1, successUrl, cancelUrl } = body;
 
-    // 1. Validation
     if (!tenantSlug || !bookId || !successUrl || !cancelUrl) {
       return NextResponse.json(
         { error: 'Missing required fields: tenantSlug, bookId, successUrl, cancelUrl' },
-        { status: 400 }
+        { status: 400, headers: CORS_HEADERS }
       );
     }
 
     if (quantity < 1) {
       return NextResponse.json(
         { error: 'Quantity must be at least 1' },
-        { status: 400 }
+        { status: 400, headers: CORS_HEADERS }
       );
     }
 
-    // 2. Fetch tenant config & secrets
     const { data: tenant, error: tenantError } = await supabaseServer
       .from('tenants')
       .select('*')
@@ -33,18 +41,17 @@ export async function POST(request: NextRequest) {
     if (tenantError || !tenant) {
       return NextResponse.json(
         { error: `Tenant not found for slug: ${tenantSlug}` },
-        { status: 404 }
+        { status: 404, headers: CORS_HEADERS }
       );
     }
 
     if (!tenant.stripe_secret_key) {
       return NextResponse.json(
         { error: 'Stripe keys are not configured for this tenant' },
-        { status: 500 }
+        { status: 500, headers: CORS_HEADERS }
       );
     }
 
-    // 3. Fetch book details
     const { data: book, error: bookError } = await supabaseServer
       .from('books')
       .select('*')
@@ -55,36 +62,32 @@ export async function POST(request: NextRequest) {
     if (bookError || !book) {
       return NextResponse.json(
         { error: `Book not found or does not belong to tenant: ${bookId}` },
-        { status: 404 }
+        { status: 404, headers: CORS_HEADERS }
       );
     }
 
     if (!book.is_active) {
       return NextResponse.json(
         { error: 'Book catalog entry is not currently active' },
-        { status: 400 }
+        { status: 400, headers: CORS_HEADERS }
       );
     }
 
-    // 4. Decrypt tenant's Stripe secret key
     let decryptedStripeKey: string;
     try {
       decryptedStripeKey = decrypt(tenant.stripe_secret_key);
     } catch (err) {
       console.error('Failed to decrypt tenant Stripe key:', err);
       return NextResponse.json(
-        { error: 'Stripe credentials decrytion failure' },
-        { status: 500 }
+        { error: 'Stripe credentials decryption failure' },
+        { status: 500, headers: CORS_HEADERS }
       );
     }
 
-    // 5. Initialize Stripe with decrypted key
     const stripe = new Stripe(decryptedStripeKey, {
       apiVersion: '2025-01-27.acacia' as any,
     });
 
-    // 6. Create Stripe Checkout Session
-    // Convert price to cents (Stripe expects integer cents)
     const unitAmountCents = Math.round(Number(book.price) * 100);
 
     const session = await stripe.checkout.sessions.create({
@@ -105,7 +108,7 @@ export async function POST(request: NextRequest) {
       ],
       billing_address_collection: 'auto',
       shipping_address_collection: {
-        allowed_countries: ['US', 'CA', 'GB', 'AU'], // Standard supported delivery domains
+        allowed_countries: ['US', 'CA', 'GB', 'AU'],
       },
       success_url: successUrl,
       cancel_url: cancelUrl,
@@ -117,15 +120,15 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({
-      url: session.url,
-      sessionId: session.id,
-    });
+    return NextResponse.json(
+      { url: session.url, sessionId: session.id },
+      { headers: CORS_HEADERS }
+    );
   } catch (err: any) {
     console.error('Checkout API error:', err);
     return NextResponse.json(
       { error: err.message || 'Internal server error' },
-      { status: 500 }
+      { status: 500, headers: CORS_HEADERS }
     );
   }
 }
