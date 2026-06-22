@@ -112,8 +112,8 @@ export async function POST(
       line_items: [
         {
           title: book.title,
-          cover_pdf: book.cover_pdf_url,
-          interior_pdf: book.interior_pdf_url,
+          cover: book.cover_pdf_url,
+          interior: book.interior_pdf_url,
           pod_package_id: book.pod_package_id,
           quantity: order.quantity
         }
