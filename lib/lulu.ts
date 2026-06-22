@@ -25,8 +25,7 @@ async function getLuluToken(config: LuluConfig): Promise<string> {
     return tokenCache[cacheKey].accessToken;
   }
 
-  const host = config.environment === 'production' ? 'https://api.lulu.com' : 'https://api.sandbox.lulu.com';
-  const url = `${host}/auth/realms/glasstree/protocol/openid-connect/token`;
+  const url = 'https://api.lulu.com/auth/realms/glasstree/protocol/openid-connect/token';
 
   const credentials = Buffer.from(`${config.clientKey}:${config.clientSecret}`).toString('base64');
 
