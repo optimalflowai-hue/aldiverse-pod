@@ -16,7 +16,11 @@ export async function OPTIONS() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { tenantSlug, bookId, quantity = 1, successUrl, cancelUrl } = body;
+    const tenantSlug = body.tenantSlug || body.tenant_slug;
+const bookId = body.bookId || body.book_id;
+const successUrl = body.successUrl || body.success_url;
+const cancelUrl = body.cancelUrl || body.cancel_url;
+const quantity = body.quantity || 1;
 
     if (!tenantSlug || !bookId || !successUrl || !cancelUrl) {
       return NextResponse.json(
