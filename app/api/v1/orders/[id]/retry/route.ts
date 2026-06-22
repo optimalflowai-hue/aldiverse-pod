@@ -135,7 +135,7 @@ export async function POST(
 
     if (!dispatchRes.ok) {
       return NextResponse.json({ 
-        error: `Lulu Job Dispatch failed: ${dispatchData?.error?.message || dispatchRes.statusText}` 
+        error: `Lulu Job Dispatch failed: ${JSON.stringify(dispatchData)}` 
       }, { status: 500 });
     }
 
