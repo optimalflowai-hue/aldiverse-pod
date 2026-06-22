@@ -13,7 +13,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // 1. Resolve tenant ID from slug
     const { data: tenant, error: tenantError } = await supabaseServer
       .from('tenants')
       .select('id')
@@ -27,10 +26,9 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // 2. Fetch active books for this tenant
     const { data: books, error: booksError } = await supabaseServer
       .from('books')
-      .select('id, title, description, price, pod_package_id, is_active')
+      .select('id, title, description, price, pod_package_id, is_active, cover_image_url')
       .eq('tenant_id', tenant.id)
       .eq('is_active', true);
 
@@ -42,7 +40,17 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ books });
+    const transformed = (books || []).map(book => ({
+      ...book,
+      price_cents: Math.round(Number(book.price) * 100),
+    }));
+
+    return NextResponse.json(transformed, {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET',
+      }
+    });
   } catch (err: any) {
     console.error('Unhandled error in catalog API:', err);
     return NextResponse.json(
