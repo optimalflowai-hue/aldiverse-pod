@@ -81,7 +81,7 @@ export async function POST(
 
     const authUrl = env === 'production' 
       ? 'https://api.lulu.com/auth/realms/glasstree/protocol/openid-connect/token' 
-      : 'https://api.lulu.com/auth/realms/glasstree/protocol/openid-connect/token';
+      : 'https://api.sandbox.lulu.com/auth/realms/glasstree/protocol/openid-connect/token';
 
     const apiUrl = env === 'production'
       ? 'https://api.lulu.com/print-jobs/'
